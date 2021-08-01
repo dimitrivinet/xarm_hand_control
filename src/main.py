@@ -1,38 +1,29 @@
 import json
 import sys
-import joblib
-import enum
+import time
+from collections import deque
+from statistics import mean
 
 import cv2
+import joblib
 import mediapipe as mp
 import numpy as np
 import torch
 
 from training.model import HandsClassifier
+from utils import Mode, Command
 
 
-class Mode(enum.Enum):
-    NO_CLASSIFICATION = 0
-    RANDOM_FOREST = 1
-    MLP = 2
-
-# class Direction(enum.Enum):
-#     NONE = 0
-#     LEFT = 1
-#     UP_LEFT = 2
-#     UP = 3
-#     UP_RIGHT = 4
-#     RIGHT = 5
-#     DOWN_RIGHT = 6
-#     DOWN = 7
-#     DOWN_LEFT = 8
-
-
-# MODE = Mode.NO_CLASSIFICATION
+MODE = Mode.NO_CLASSIFICATION
 # MODE = Mode.RANDOM_FOREST
-MODE = Mode.MLP
+# MODE = Mode.MLP
 
+VIDEO_INDEX = 6
 WINDOW_NAME = "win"
+
+ROBOT_COMMAND_SCALE = 100
+ROBOT_SPEED = 100.0
+ROBOT_MVACC = 1000.0
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -117,7 +108,7 @@ def run_hands(image, hands):
     # return cv2.flip(annotated_image, 1), results.multi_hand_landmarks
 
 
-def get_robot_movement(im_shape, landmarks):
+def get_polar_coords(im_shape, landmarks):
     if landmarks is None:
         return None, None
 
@@ -150,7 +141,8 @@ def get_robot_movement(im_shape, landmarks):
         # map angle from -pi, pi to 0, 360 with 0 on the right
         if angle < 0:
             angle += 2*np.pi
-        angle = np.interp(angle, (0, 2 * np.pi), (0, 360))
+        # angle = np.interp(angle, (0, 2 * np.pi), (0, 360))
+        angle = np.rad2deg(angle)
 
         dists_and_angles.append([dist, angle])
 
@@ -162,6 +154,29 @@ def get_robot_movement(im_shape, landmarks):
     return dist, angle
 
 
+def get_robot_command(im_shape, dist, angle):
+    command = Command()
+
+    if (dist, angle) == (None, None) or dist < (np.min(im_shape[:2]) / 15):
+        empty_command = Command()
+        return empty_command
+
+    im_height, im_width = im_shape[0], im_shape[1]
+    scaled_x = dist * np.cos(np.deg2rad(angle)) / \
+        (im_width / 2) * ROBOT_COMMAND_SCALE
+    scaled_y = dist * np.sin(np.deg2rad(angle)) / \
+        (im_height / 2) * ROBOT_COMMAND_SCALE
+
+    command = Command(
+        x=int(scaled_x),
+        y=int(scaled_y),
+        speed=ROBOT_SPEED,
+        mvacc=ROBOT_MVACC
+    )
+
+    return command
+
+
 def main():
     with open('./dataset.json') as f:
         dataset = json.load(f)
@@ -170,7 +185,10 @@ def main():
     model = load_model(classes)
 
     win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(VIDEO_INDEX)
+
+    new_frame_time, prev_frame_time = 0.0, 0.0
+    fps_buffer = deque(maxlen=10)
 
     # Check if the webcam is opened correctly
     if not cap.isOpened():
@@ -187,6 +205,8 @@ def main():
                 cap_ok, frame = cap.read()
                 if not cap_ok:
                     continue
+                new_frame_time = time.perf_counter()
+
                 ret_frame, landmarks = run_hands(frame, hands)
 
                 to_show = cv2.flip(
@@ -203,10 +223,20 @@ def main():
                 classified_hands = run_inference(classes, landmarks, model)
                 classified_hands = ", ".join(classified_hands)
 
-                dist, angle = get_robot_movement(to_show.shape, landmarks)
+                dist, angle = get_polar_coords(to_show.shape, landmarks)
                 if (dist, angle) != (None, None):
                     classified_hands += f" | {dist:.2f}, {angle:.2f}"
 
+                robot_command = get_robot_command(to_show.shape, dist, angle)
+
+                # calculate fps with mean of last 10 fps
+                fps = 1/(new_frame_time-prev_frame_time)
+                fps = fps
+                fps_buffer.appendleft(fps)
+                mean_fps = str(int(mean(fps_buffer)))
+                prev_frame_time = new_frame_time
+
+                # add info to screen
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 bottomLeftCornerOfText = (20, 450)
                 fontScale = 1
@@ -216,6 +246,9 @@ def main():
                             fontScale,
                             fontColor,
                             lineType)
+
+                cv2.putText(to_show, mean_fps, (7, 30), font,
+                            1, (0, 0, 255), 2, cv2.LINE_AA)
 
                 cv2.imshow(WINDOW_NAME, to_show)
                 cv2.waitKey(1)
