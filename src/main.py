@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import time
 from collections import deque
@@ -14,9 +15,18 @@ from training.model import HandsClassifier
 from utils import Mode, Command
 
 
+# choose classification mode
+# with env variables:
+"""
+MODE = os.getenv('MODE')
+MODE = Mode.get(MODE)
+"""
+# with hard-coded value:
+
 MODE = Mode.NO_CLASSIFICATION
 # MODE = Mode.RANDOM_FOREST
 # MODE = Mode.MLP
+
 
 VIDEO_INDEX = 6
 WINDOW_NAME = "win"
