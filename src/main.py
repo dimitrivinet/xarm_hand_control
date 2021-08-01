@@ -125,6 +125,7 @@ def get_robot_movement(im_shape, landmarks):
     im_width = im_shape[1]
     im_center = (im_width // 2, im_height // 2)
 
+    # palm center as the point between wrist and index metacarpal head
     palm_centers = []
     for landmark in landmarks:
         p1 = (landmark.landmark[mp_hands.HandLandmark.WRIST].x * im_width,
@@ -146,7 +147,7 @@ def get_robot_movement(im_shape, landmarks):
         # angle = 90 or 270 deg for x = 0
         angle = np.arctan2(y, x)
 
-        # map angle from -pi, pi to 0, 360
+        # map angle from -pi, pi to 0, 360 with 0 on the right
         if angle < 0:
             angle += 2*np.pi
         angle = np.interp(angle, (0, 2 * np.pi), (0, 360))
