@@ -20,7 +20,7 @@ classes = [
     {'name': 'ok'},
     {'name': 'pinch'},
     {'name': 'thumb_up'},
-    {'name': 'tuhmb_down'},
+    {'name': 'thumb_down'},
     {'name': 'index'},
     {'name': 'middle'},
     {'name': 'little'}
@@ -96,7 +96,7 @@ def acquire(output_path, video_index):
 
                     to_show = frame if ret_frame is None else ret_frame
                     cv2.imshow(WINDOW_NAME, to_show)
-                    cv2.waitKey(100)
+                    cv2.waitKey(1)
 
                     save_landmarks(data, index, ret_landmarks)
 

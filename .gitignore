@@ -1,6 +1,6 @@
 other
-dataset.json
-src/output
+dataset
+output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -7,6 +7,14 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 
+DIRNAME = os.path.dirname(os.path.abspath(__file__))
+
+DATASET_DIR = os.path.join(DIRNAME, "./dataset/dataset.json")
+
+def transform(landmark):
+    pass
+
+
 class HandsDataset(Dataset):
     dataset_dict: dict
     classes: list
@@ -14,13 +22,18 @@ class HandsDataset(Dataset):
     n_classes: int
 
     def __init__(self,
-                 dataset_path: os.PathLike,
+                 dataset_dir: os.PathLike,
                  train):
 
-        with open(dataset_path, "r") as f:
+        self.train = train
+        if self.train:
+            self.dataset_dir = os.path.join(dataset_dir, "dataset_train.json")
+        else:
+            self.dataset_dir = os.path.join(dataset_dir, "dataset_valid.json")
+
+        with open(dataset_dir, "r") as f:
             self.dataset_dict = json.load(f)
 
-        self.train = train
         self.classes = self.dataset_dict['classes']
         self.n_classes = len(self.classes)
         self.data = np.array(self.dataset_dict['data'], dtype=object)
@@ -40,11 +53,11 @@ class HandsDataset(Dataset):
 @dataclass
 class TrainingData():
     trainset: HandsDataset = HandsDataset(
-        './dataset.json',
+        DATASET_DIR,
         train=True
     )
     validset: HandsDataset = HandsDataset(
-        './dataset.json',
+        DATASET_DIR,
         train=False
     )
     trainloader: DataLoader = DataLoader(

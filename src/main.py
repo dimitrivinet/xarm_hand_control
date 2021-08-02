@@ -14,6 +14,7 @@ import torch
 from training.model import HandsClassifier
 from utils import Mode, Command
 
+DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
 # choose classification mode
 # with env variables:
@@ -27,6 +28,9 @@ MODE = Mode.get(MODE)
 # MODE = Mode.RANDOM_FOREST
 MODE = Mode.MLP
 
+DATASET_PATH = os.path.join(DIRNAME, "dataset.json")
+MLP_MODEL_PATH = os.path.join(DIRNAME, "training/output/best.pt")
+RF_MODEL_PATH = os.path.join(DIRNAME, "training/output/random_forest.joblib")
 
 VIDEO_INDEX = 6
 WINDOW_NAME = "win"
@@ -62,12 +66,12 @@ def load_model(classes=None):
     model = None
 
     if MODE == Mode.RANDOM_FOREST:
-        model = joblib.load("./output/random_forest.joblib")
+        model = joblib.load(RF_MODEL_PATH)
 
     if MODE == Mode.MLP:
         n_classes = len(classes)
         model = HandsClassifier(n_classes)
-        model.load_state_dict(torch.load('./output/best.pt'))
+        model.load_state_dict(torch.load(MLP_MODEL_PATH))
         model.eval()
 
     return model
@@ -196,7 +200,7 @@ def run_processing(classes, model, to_show, landmarks):
 
 
 def main():
-    with open('./dataset.json') as f:
+    with open(DATASET_PATH) as f:
         dataset = json.load(f)
 
     classes = dataset['classes']
