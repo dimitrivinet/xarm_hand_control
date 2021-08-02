@@ -23,9 +23,9 @@ MODE = Mode.get(MODE)
 """
 # with hard-coded value:
 
-MODE = Mode.NO_CLASSIFICATION
+# MODE = Mode.NO_CLASSIFICATION
 # MODE = Mode.RANDOM_FOREST
-# MODE = Mode.MLP
+MODE = Mode.MLP
 
 
 VIDEO_INDEX = 6
@@ -45,10 +45,8 @@ def class_as_str(classes, class_index):
 
 
 def format_landmarks(landmarks):
-    if landmarks is None:
-        return None
-
     ret = []
+
     for landmark in landmarks:
         f_landmarks = [[point.x, point.y] for point in landmark.landmark]
 
@@ -67,8 +65,7 @@ def load_model(classes=None):
         model = joblib.load("./output/random_forest.joblib")
 
     if MODE == Mode.MLP:
-        # n_classes = len(classes)
-        n_classes = 27
+        n_classes = len(classes)
         model = HandsClassifier(n_classes)
         model.load_state_dict(torch.load('./output/best.pt'))
         model.eval()
@@ -79,9 +76,6 @@ def load_model(classes=None):
 def run_inference(classes, landmarks, model):
     classified_hands = []
     f_landmarks = format_landmarks(landmarks)
-
-    if f_landmarks is None:
-        return classified_hands
 
     for landmark in f_landmarks:
 
@@ -119,9 +113,6 @@ def run_hands(image, hands):
 
 
 def get_polar_coords(im_shape, landmarks):
-    if landmarks is None:
-        return None, None
-
     im_height = im_shape[0]
     im_width = im_shape[1]
     im_center = (im_width // 2, im_height // 2)
@@ -187,6 +178,23 @@ def get_robot_command(im_shape, dist, angle):
     return command
 
 
+def run_processing(classes, model, to_show, landmarks):
+    if landmarks is None:
+        return "", None
+
+    classified_hands = run_inference(classes, landmarks, model)
+
+    dist, angle = get_polar_coords(to_show.shape, landmarks)
+
+    # classified_hands += f" | {dist:.2f}, {angle:.2f}"
+    to_show_text = " | ".join(
+        classified_hands + [f'{dist:.2f}, {angle:.2f}', ])
+
+    robot_command = get_robot_command(to_show.shape, dist, angle)
+
+    return to_show_text, robot_command
+
+
 def main():
     with open('./dataset.json') as f:
         dataset = json.load(f)
@@ -222,6 +230,10 @@ def main():
                 to_show = cv2.flip(
                     frame, 1) if ret_frame is None else ret_frame
 
+                to_show_text, robot_command = run_processing(
+                    classes, model, to_show, landmarks)
+
+                # show dot at center of image
                 im_center = (
                     int(to_show.shape[1] / 2), int(to_show.shape[0] / 2))
                 to_show = cv2.circle(to_show,
@@ -229,15 +241,6 @@ def main():
                                      radius=3,
                                      color=(0, 0, 255),
                                      thickness=3)
-
-                classified_hands = run_inference(classes, landmarks, model)
-                classified_hands = ", ".join(classified_hands)
-
-                dist, angle = get_polar_coords(to_show.shape, landmarks)
-                if (dist, angle) != (None, None):
-                    classified_hands += f" | {dist:.2f}, {angle:.2f}"
-
-                robot_command = get_robot_command(to_show.shape, dist, angle)
 
                 # calculate fps with mean of last 10 fps
                 fps = 1/(new_frame_time-prev_frame_time)
@@ -249,16 +252,28 @@ def main():
                 # add info to screen
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 bottomLeftCornerOfText = (20, 450)
-                fontScale = 1
+                fontScale = 0.8
                 fontColor = (255, 255, 255)
-                lineType = 2
-                cv2.putText(to_show, classified_hands, bottomLeftCornerOfText, font,
-                            fontScale,
-                            fontColor,
-                            lineType)
+                tickness = 2
+                cv2.putText(img=to_show,
+                            text=to_show_text,
+                            org=bottomLeftCornerOfText,
+                            fontFace=font,
+                            fontScale=fontScale,
+                            color=fontColor,
+                            thickness=tickness)
 
-                cv2.putText(to_show, mean_fps, (7, 30), font,
-                            1, (0, 0, 255), 2, cv2.LINE_AA)
+                # cv2.putText(to_show, mean_fps, (7, 30), font,
+                #             1, (0, 0, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(img=to_show,
+                            text=mean_fps,
+                            org=(7, 30),
+                            fontFace=font,
+                            fontScale=1,
+                            color=(0, 0, 255),
+                            thickness=2,
+                            lineType=cv2.LINE_AA)
 
                 cv2.imshow(WINDOW_NAME, to_show)
                 cv2.waitKey(1)
