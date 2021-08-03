@@ -1,5 +1,7 @@
 import json
+import os
 import sys
+from typing import Any, Iterable, Tuple
 
 import cv2
 import mediapipe as mp
@@ -27,7 +29,17 @@ classes = [
 ]
 
 
-def run_one_hand(image, hands):
+def run_one_hand(image: Any, hands: mp_hands.Hands) -> Tuple[Any, Iterable]:
+    """Get annotated image and landmarks for only one hand with Mediapipe Hands
+
+    Args:
+        image (Any): Image to run recognition on
+        hands (mp_hands.Hands): Mediapipe Hands instance
+
+    Returns:
+        Tuple[Any, Iterable]: annotated image, hand landmarks
+    """
+
     # Convert the BGR image to RGB, flip the image around y-axis for correct
     # handedness output and process it with MediaPipe Hands.
     image.flags.writeable = False
@@ -51,7 +63,15 @@ def run_one_hand(image, hands):
     return cv2.flip(annotated_image, 1), hand_landmarks
 
 
-def save_landmarks(data, curr_class_index, landmarks):
+def save_landmarks(data: list, curr_class_index: int, landmarks: Iterable):
+    """Add new landmark to data list
+
+    Args:
+        data (list): Data list
+        curr_class_index (int): Class index which corresponds to current landmarks
+        landmarks (Iterable): Hand landmarks
+    """
+
     if landmarks is None:
         return
 
@@ -60,7 +80,17 @@ def save_landmarks(data, curr_class_index, landmarks):
     data.append([f_landmarks, curr_class_index])
 
 
-def acquire(output_path, video_index):
+def acquire(output_path: os.PathLike, video_index: int):
+    """Loop for creating dataset
+
+    Args:
+        output_path (os.PathLike): Path to save new dataset to
+        video_index (int): Webcam index (ex: 0 = /dev/video0)
+
+    Raises:
+        IOError: if webcam can't be opened
+    """
+
     data = []
 
     win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
@@ -114,4 +144,3 @@ def acquire(output_path, video_index):
 
     cap.release()
     cv2.destroyAllWindows()
-    sys.exit(0)

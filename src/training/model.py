@@ -3,6 +3,8 @@ import torch.nn as nn
 
 
 class HandsClassifier(nn.Module):
+    """Classifier Model
+    """
     def __init__(self, n_classes):
         super(HandsClassifier, self).__init__()
         self.n_classes = n_classes

@@ -2,35 +2,26 @@ import os
 import json
 import random
 
-DIRNAME = os.path.dirname(os.path.abspath(__file__))
-
-DATASET_PATH = os.path.join(DIRNAME, "dataset/dataset.json")
+from training.acquire import classes
 
 
-def split_dataset(train_percentage: float):
-    with open(DATASET_PATH, "r") as f:
+def split_dataset(dataset_path: os.PathLike, train_percentage: float):
+    with open(dataset_path, 'r') as f:
         dataset = json.load(f)
 
     data = dataset['data']
     random.shuffle(data)
 
     n_training_data = int(len(data) * train_percentage)
-    trainset = {'data': data[:n_training_data]}
-    validset = {'data': data[n_training_data:]}
+    trainset = {'data': data[:n_training_data], 'classes': classes}
+    validset = {'data': data[n_training_data:], 'classes': classes}
 
-    dataset_dirname = os.path.dirname(DATASET_PATH)
+    dataset_dir = os.path.dirname(dataset_path)
 
-    with open(os.path.join(dataset_dirname, "dataset_train.json"), 'w') as f:
+    with open(os.path.join(dataset_dir, 'dataset_train.json'), 'w') as f:
         json.dump(trainset, f)
 
-    with open(os.path.join(dataset_dirname, "dataset_valid.json"), 'w') as f:
+    with open(os.path.join(dataset_dir, 'dataset_valid.json'), 'w') as f:
         json.dump(validset, f)
 
     print("done.")
-
-
-def main():
-    split_dataset(0.7)
-
-if __name__ == "__main__":
-    main()

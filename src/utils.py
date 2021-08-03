@@ -2,7 +2,14 @@ from enum import Enum, auto
 from collections import namedtuple
 
 
-class Mode(Enum):
+class TrainingMode(Enum):
+    """Program mode enum
+    """
+    TRAIN = auto()
+    EXPORT = auto()
+    ACQUIRE = auto()
+
+class ClassificationMode(Enum):
     NO_CLASSIFICATION = auto()
     RANDOM_FOREST = auto()
     MLP = auto()
