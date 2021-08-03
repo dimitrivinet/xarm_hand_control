@@ -6,4 +6,4 @@ Hand landmark recognition with Mediapipe and landmark classification with PyTorc
 
 - Install requirements with `requirements.txt`
 
-- Copy  `src/.env.default` as ``.env` and fill in absolute paths for all values
+- Copy  `src/.env.default` as `.env` and fill in absolute paths for all values
