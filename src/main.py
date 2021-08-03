@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from collections import deque
-from statistics import mean
+from statistics import mean, mode
 
 import cv2
 import joblib
@@ -28,7 +28,7 @@ MODE = Mode.get(MODE)
 # MODE = Mode.RANDOM_FOREST
 MODE = Mode.MLP
 
-DATASET_PATH = os.path.join(DIRNAME, "dataset.json")
+DATASET_PATH = os.path.join(DIRNAME, "training/dataset/dataset.json")
 MLP_MODEL_PATH = os.path.join(DIRNAME, "training/output/best.pt")
 RF_MODEL_PATH = os.path.join(DIRNAME, "training/output/random_forest.joblib")
 
@@ -38,6 +38,8 @@ WINDOW_NAME = "win"
 ROBOT_COMMAND_SCALE = 100
 ROBOT_SPEED = 100.0
 ROBOT_MVACC = 1000.0
+
+classification_queue = deque(maxlen=5)
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -90,7 +92,9 @@ def run_inference(classes, landmarks, model):
 
         classified_hands.append(class_as_str(classes, class_index))
 
-    return classified_hands
+    classification_queue.appendleft(tuple(classified_hands))
+
+    return list(mode(classification_queue))
 
 
 def run_hands(image, hands):
@@ -248,7 +252,6 @@ def main():
 
                 # calculate fps with mean of last 10 fps
                 fps = 1/(new_frame_time-prev_frame_time)
-                fps = fps
                 fps_buffer.appendleft(fps)
                 mean_fps = str(int(mean(fps_buffer)))
                 prev_frame_time = new_frame_time

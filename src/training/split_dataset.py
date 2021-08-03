@@ -2,8 +2,6 @@ import os
 import json
 import random
 
-random.seed(42)
-
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
 DATASET_PATH = os.path.join(DIRNAME, "dataset/dataset.json")
