@@ -3,21 +3,26 @@ import torch.nn as nn
 
 
 class HandsClassifier(nn.Module):
+    """Classifier Model
+    """
     def __init__(self, n_classes):
         super(HandsClassifier, self).__init__()
         self.n_classes = n_classes
 
         self.classifier = nn.Sequential(
-            nn.Linear(21*2, 32),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(32, 64),
+            nn.Linear(21*2, 64),
             nn.ReLU(inplace=True),
 
             nn.Linear(64, 128),
             nn.ReLU(inplace=True),
 
             nn.Linear(128, 256),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(256, 256),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(256, 256),
             nn.ReLU(inplace=True),
 
             nn.Linear(256, 128),

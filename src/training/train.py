@@ -70,4 +70,4 @@ def train(save_path: os.PathLike, epochs: int, save_all: bool):
         if save_all:
             torch.save(
                 model.state_dict(),
-                os.path.join(save_path, f"mnist_{epoch+1:03d}.pt"))
+                os.path.join(save_path, f"checkpoints/mnist_{epoch+1:03d}.pt"))

@@ -1,5 +1,7 @@
 import json
+import os
 import sys
+from typing import Any, Iterable, Tuple
 
 import cv2
 import mediapipe as mp
@@ -10,47 +12,34 @@ mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 drawing_styles = mp.solutions.drawing_styles
 
-classes = {0: 'open_hand', 1: 'fist', 2: 'two', 3: 'three', 4: 'spiderman', 5: 'ok', 6: 'pinch',
-           7: 'thumb_left', 8: 'thumb_right', 9: 'thumb_up', 10: 'thumb_down',
-           11: 'index_left', 12: 'index_right', 13: 'index_up', 14: 'index_down',
-           15: 'middle_left', 16: 'middle_right', 17:  'middle_up', 18: 'middle_down',
-           19: 'ring_left', 20:  'ring_right', 21: 'ring_up', 22: 'ring_down',
-           23: 'little_left', 24: 'little_right', 25: 'little_up', 26: 'little_down'
-           }
 
 classes = [
-    {"name": 'open_hand'},
-    {"name": 'open_hand'},
-    {"name": 'fist'},
-    {"name": 'two'},
-    {"name": 'three'},
-    {"name": 'spiderman'},
-    {"name": 'ok'},
-    {"name": 'pinch'},
-    {"name": 'thumb_left'},
-    {"name": 'thumb_right'},
-    {"name": 'thumb_up'},
-    {"name": 'thumb_down'},
-    {"name": 'index_left'},
-    {"name": 'index_right'},
-    {"name": 'index_up'},
-    {"name": 'index_down'},
-    {"name": 'middle_left'},
-    {"name": 'middle_right'},
-    {"name": 'middle_up'},
-    {"name": 'middle_down'},
-    {"name": 'ring_left'},
-    {"name": 'ring_right'},
-    {"name": 'ring_up'},
-    {"name": 'ring_down'},
-    {"name": 'little_left'},
-    {"name": 'little_right'},
-    {"name": 'little_up'},
-    {"name": 'little_down'}
+    {'name': 'open_hand'},
+    {'name': 'fist'},
+    {'name': 'two'},
+    {'name': 'three'},
+    {'name': 'spiderman'},
+    {'name': 'ok'},
+    {'name': 'pinch'},
+    {'name': 'thumb_up'},
+    {'name': 'thumb_down'},
+    {'name': 'index'},
+    {'name': 'middle'},
+    {'name': 'little'}
 ]
 
 
-def run_one_hand(image, hands):
+def run_one_hand(image: Any, hands: mp_hands.Hands) -> Tuple[Any, Iterable]:
+    """Get annotated image and landmarks for only one hand with Mediapipe Hands
+
+    Args:
+        image (Any): Image to run recognition on
+        hands (mp_hands.Hands): Mediapipe Hands instance
+
+    Returns:
+        Tuple[Any, Iterable]: annotated image, hand landmarks
+    """
+
     # Convert the BGR image to RGB, flip the image around y-axis for correct
     # handedness output and process it with MediaPipe Hands.
     image.flags.writeable = False
@@ -74,7 +63,15 @@ def run_one_hand(image, hands):
     return cv2.flip(annotated_image, 1), hand_landmarks
 
 
-def save_landmarks(data, curr_class_index, landmarks):
+def save_landmarks(data: list, curr_class_index: int, landmarks: Iterable):
+    """Add new landmark to data list
+
+    Args:
+        data (list): Data list
+        curr_class_index (int): Class index which corresponds to current landmarks
+        landmarks (Iterable): Hand landmarks
+    """
+
     if landmarks is None:
         return
 
@@ -83,7 +80,17 @@ def save_landmarks(data, curr_class_index, landmarks):
     data.append([f_landmarks, curr_class_index])
 
 
-def acquire(output_path, video_index):
+def acquire(output_path: os.PathLike, video_index: int):
+    """Loop for creating dataset
+
+    Args:
+        output_path (os.PathLike): Path to save new dataset to
+        video_index (int): Webcam index (ex: 0 = /dev/video0)
+
+    Raises:
+        IOError: if webcam can't be opened
+    """
+
     data = []
 
     win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
@@ -98,9 +105,9 @@ def acquire(output_path, video_index):
     cv2.imshow(WINDOW_NAME, frame)
     cv2.waitKey(100)
 
-    for index, gesture_class in classes.items():
+    for index, gesture_class in enumerate(classes):
         user_input = input(
-            f'press enter to acquire for {gesture_class}, "exit" to exit.')
+            f'press enter to acquire for {gesture_class["name"]}, "exit" to exit.')
         if user_input == "exit":
             break
 
@@ -119,7 +126,7 @@ def acquire(output_path, video_index):
 
                     to_show = frame if ret_frame is None else ret_frame
                     cv2.imshow(WINDOW_NAME, to_show)
-                    cv2.waitKey(100)
+                    cv2.waitKey(1)
 
                     save_landmarks(data, index, ret_landmarks)
 
@@ -137,4 +144,3 @@ def acquire(output_path, video_index):
 
     cap.release()
     cv2.destroyAllWindows()
-    sys.exit(0)
