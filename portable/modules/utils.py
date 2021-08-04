@@ -35,7 +35,7 @@ class ClassificationMode(Enum):
         try:
             ret = ClassificationMode[label]
         except KeyError:
-            ret = ClassificationMode.NO_CLASSIFICATION
+            ret = ClassificationMode.NONE
 
         return ret
 

@@ -13,9 +13,9 @@ import mediapipe as mp
 import numpy as np
 import torch
 
-from training.model import HandsClassifier
-from utils import Command
-from utils import ClassificationMode as Mode
+from modules.model import HandsClassifier
+from modules.utils import Command
+from modules.utils import ClassificationMode as Mode
 
 dotenv.load_dotenv()
 

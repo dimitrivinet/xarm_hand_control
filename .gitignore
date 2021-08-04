@@ -1,6 +1,7 @@
 other
-dataset
+src/dataset
 output
+portable/models/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
