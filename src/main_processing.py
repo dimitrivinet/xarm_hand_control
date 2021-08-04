@@ -1,10 +1,9 @@
 import json
 import os
-import sys
 import time
 from collections import deque
 from statistics import mean, mode
-from typing import Tuple
+from typing import Any, Tuple
 
 import cv2
 import dotenv
@@ -12,6 +11,7 @@ import joblib
 import mediapipe as mp
 import numpy as np
 import torch
+import onnxruntime
 
 from training.model import HandsClassifier
 from utils import Command
@@ -21,6 +21,7 @@ dotenv.load_dotenv()
 
 DATASET_DIR = os.getenv('DATASET_DIR')
 MLP_MODEL_PATH = os.getenv('MLP_MODEL_PATH')
+ONNX_MODEL_PATH = os.getenv('ONNX_MODEL_PATH')
 RF_MODEL_PATH = os.getenv('RF_MODEL_PATH')
 
 # choose classification mode
@@ -33,7 +34,8 @@ MODE = Mode.get(MODE)
 # with hard-coded value:
 # MODE = Mode.NO_CLASSIFICATION
 # MODE = Mode.RANDOM_FOREST
-MODE = Mode.MLP
+# MODE = Mode.MLP
+MODE = Mode.ONNX
 
 VIDEO_INDEX = 6
 WINDOW_NAME = "win"
@@ -64,10 +66,27 @@ def format_landmarks(landmarks):
 
         if MODE == Mode.RANDOM_FOREST:
             ret.append(np.array([f_landmarks, ]))
-        elif MODE == Mode.MLP:
+
+        if MODE == Mode.MLP:
             ret.append(torch.tensor([f_landmarks, ]))
 
+        if MODE == Mode.ONNX:
+            ret.append(np.array([f_landmarks, ], dtype=np.float32))
+
     return ret
+
+
+def get_onnx_session():
+    session = onnxruntime.InferenceSession(ONNX_MODEL_PATH)
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
+
+    def run(data):
+        result = session.run([output_name], {input_name: data})
+
+        return result
+
+    return run
 
 
 def load_model(classes=None):
@@ -82,10 +101,13 @@ def load_model(classes=None):
         model.load_state_dict(torch.load(MLP_MODEL_PATH))
         model.eval()
 
+    if MODE == Mode.ONNX:
+        model = get_onnx_session()
+
     return model
 
 
-def run_inference(classes, landmarks, model):
+def run_inference(classes: dict, landmarks: Any, model: Any):
     classified_hands = []
     f_landmarks = format_landmarks(landmarks)
 
@@ -95,6 +117,9 @@ def run_inference(classes, landmarks, model):
             class_index = model.predict(landmark.reshape(1, -1))[0]
         if MODE == Mode.MLP:
             class_index = torch.argmax(model(landmark)).item()
+        if MODE == Mode.ONNX:
+            result = model(landmark)
+            class_index = np.argmax(result[0].squeeze(axis=0))
 
         classified_hands.append(class_as_str(classes, class_index))
 

@@ -27,6 +27,7 @@ class ClassificationMode(Enum):
     NO_CLASSIFICATION = auto()
     RANDOM_FOREST = auto()
     MLP = auto()
+    ONNX = auto()
 
     @staticmethod
     def get(label):
@@ -35,7 +36,7 @@ class ClassificationMode(Enum):
         try:
             ret = ClassificationMode[label]
         except KeyError:
-            ret = ClassificationMode.NONE
+            ret = ClassificationMode.NO_CLASSIFICATION
 
         return ret
 
