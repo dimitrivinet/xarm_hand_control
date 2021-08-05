@@ -4,7 +4,7 @@ import json
 import torch
 import dotenv
 
-from training.model import HandsClassifier
+from modules.training.model import HandsClassifier
 
 dotenv.load_dotenv()
 

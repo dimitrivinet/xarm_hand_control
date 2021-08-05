@@ -2,11 +2,11 @@ import os
 
 import dotenv
 
-from training.acquire import acquire
-from training.export import export
-from training.split_dataset import split_dataset
-from training.train import train
-from utils import TrainingMode as Mode
+from modules.training.acquire import acquire
+from modules.training.export import export
+from modules.training.split_dataset import split_dataset
+from modules.training.train import train
+from modules.utils import TrainingMode as Mode
 
 dotenv.load_dotenv()
 

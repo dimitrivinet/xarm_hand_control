@@ -3,7 +3,7 @@ import os
 import time
 from collections import deque
 from statistics import mean, mode
-from typing import Any, Callable, Iterable, Tuple, Union
+from typing import Any, Callable, Tuple, Union
 
 import cv2
 import dotenv
@@ -13,9 +13,9 @@ import numpy as np
 import torch
 import onnxruntime
 
-from training.model import HandsClassifier
-from utils import Command
-from utils import ClassificationMode as Mode
+from modules.training.model import HandsClassifier
+from modules.utils import Command
+from modules.utils import ClassificationMode as Mode
 
 dotenv.load_dotenv()
 
