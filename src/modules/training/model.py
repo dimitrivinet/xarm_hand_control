@@ -25,6 +25,8 @@ class HandsClassifier(nn.Module):
             nn.Linear(256, 256),
             nn.ReLU(inplace=True),
 
+            nn.Dropout(0.2),
+
             nn.Linear(256, 128),
             nn.ReLU(inplace=True),
 
