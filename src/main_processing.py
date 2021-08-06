@@ -328,6 +328,7 @@ def main():
 
     inner_fps = FPS()
     outer_fps = FPS()
+
     win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
 
     classes = get_classes()
@@ -357,7 +358,7 @@ def main():
                     print("cap not ok")
                     continue
 
-                inner_fps.start()
+                inner_fps.update()
 
                 ret_frame, landmarks = run_hands(frame, hands)
 
@@ -367,7 +368,7 @@ def main():
                 to_show_text, robot_command = run_processing(
                     classes, model, to_show, landmarks)
 
-                inner_fps.stop()
+                inner_fps.update()
                 outer_fps.update()
                 outer_fps_value = int(outer_fps.fps())
                 inner_fps_value = int(inner_fps.fps())
