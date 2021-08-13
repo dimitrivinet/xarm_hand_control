@@ -9,16 +9,13 @@ import dotenv
 import joblib
 import mediapipe as mp
 import numpy as np
-from numpy.core.numeric import outer
-import torch
 import onnxruntime
+import torch
 
 from modules.training.model import HandsClassifier
-from modules.utils import (
-    Command,
-    FPS,
-    ClassificationMode as Mode
-)
+from modules.utils import FPS
+from modules.utils import ClassificationMode as Mode
+from modules.utils import Command
 
 dotenv.load_dotenv()
 
@@ -28,19 +25,18 @@ ONNX_MODEL_PATH = os.getenv('ONNX_MODEL_PATH')
 RF_MODEL_PATH = os.getenv('RF_MODEL_PATH')
 
 # choose classification mode
-# with env variables:
-"""
-MODE = os.getenv('MODE')
-MODE = Mode.get(MODE)
-"""
+# with env variable:
+MODE = os.getenv('CLASSIFICATION_MODE')
+if MODE is not None:
+    MODE = Mode.get(MODE)
+else:
+    # with hard-coded value:
+    # MODE = Mode.NO_CLASSIFICATION
+    # MODE = Mode.RANDOM_FOREST
+    # MODE = Mode.MLP
+    MODE = Mode.ONNX
 
-# with hard-coded value:
-# MODE = Mode.NO_CLASSIFICATION
-# MODE = Mode.RANDOM_FOREST
-# MODE = Mode.MLP
-MODE = Mode.ONNX
-
-VIDEO_INDEX = 6
+VIDEO_INDEX = 0
 WINDOW_NAME = "win"
 
 ROBOT_COMMAND_SCALE = 100
@@ -224,7 +220,8 @@ def get_center_coords(landmarks: list) -> Tuple[float, float]:
         palm_center_centered = [palm_center[0] - 0.5, - (palm_center[1] - 0.5)]
         palm_centers.append(palm_center_centered)
 
-    palm_centers_distances = [np.linalg.norm(palm_center, ord=2) for palm_center in palm_centers]
+    palm_centers_distances = [np.linalg.norm(
+        palm_center, ord=2) for palm_center in palm_centers]
     # get index of row with smallest distance to center (ignore angle)
     min_index = np.argmin(palm_centers_distances, axis=0)
     x, y = palm_centers[min_index]
@@ -298,6 +295,7 @@ def run_processing(classes: dict, model: Any, image: Any, landmarks: list
 
     return to_show_text, robot_command
 
+
 def get_classes(dataset_path: os.PathLike = None) -> dict:
     """Get classes from dataset JSON
 
@@ -316,6 +314,46 @@ def get_classes(dataset_path: os.PathLike = None) -> dict:
     classes = dataset['classes']
 
     return classes
+
+
+def add_image_info(image, top_left_text, bottom_left_text):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    top_left_corner_of_text = (20, 30)
+    bottom_left_corner_of_text = (20, image.shape[0] - 30)
+    font_scale = 0.8
+    white = (255, 255, 255)
+    red = (0, 0, 255)
+    tickness = 2
+    linetype = cv2.LINE_AA
+
+    # show fps
+    cv2.putText(img=image,
+                text=top_left_text,
+                org=top_left_corner_of_text,
+                fontFace=font,
+                fontScale=font_scale,
+                color=red,
+                thickness=tickness,
+                lineType=linetype)
+
+    # show hand info
+    cv2.putText(img=image,
+                text=bottom_left_text,
+                org=bottom_left_corner_of_text,
+                fontFace=font,
+                fontScale=font_scale,
+                color=white,
+                thickness=tickness,
+                lineType=linetype)
+
+    # show dot at center of image
+    im_center = (
+        int(image.shape[1] / 2), int(image.shape[0] / 2))
+    cv2.circle(img=image,
+               center=im_center,
+               radius=3,
+               color=(0, 0, 255),
+               thickness=3)
 
 
 def main():
@@ -346,77 +384,43 @@ def main():
         raise IOError("Cannot open webcam")
 
     try:
-        # Run MediaPipe Hands.
-        with mp_hands.Hands(
-                static_image_mode=False,
-                max_num_hands=MAX_NUM_HANDS,
-                min_detection_confidence=0.7) as hands:
+        hands = mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=MAX_NUM_HANDS,
+            min_detection_confidence=0.7)
 
-            while cap.isOpened():
-                cap_ok, frame = cap.read()
-                if not cap_ok:
-                    print("cap not ok")
-                    continue
+        while cap.isOpened():
+            cap_ok, frame = cap.read()
+            if not cap_ok:
+                print("cap not ok")
+                continue
 
-                inner_fps.update()
+            inner_fps.update()
 
-                ret_frame, landmarks = run_hands(frame, hands)
+            ret_frame, landmarks = run_hands(frame, hands)
 
-                to_show = cv2.flip(
-                    frame, 1) if ret_frame is None else ret_frame
+            to_show = cv2.flip(
+                frame, 1) if ret_frame is None else ret_frame
 
-                to_show_text, robot_command = run_processing(
-                    classes, model, to_show, landmarks)
+            to_show_text, robot_command = run_processing(
+                classes, model, to_show, landmarks)
 
-                inner_fps.update()
-                outer_fps.update()
-                outer_fps_value = int(outer_fps.fps())
-                inner_fps_value = int(inner_fps.fps())
+            inner_fps.update()
+            outer_fps.update()
+            outer_fps_value = int(outer_fps.fps())
+            inner_fps_value = int(inner_fps.fps())
 
-                fpss = f'{outer_fps_value}/{inner_fps_value}'
+            fpss = f'{outer_fps_value}/{inner_fps_value}'
 
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                bottomLeftCornerOfText = (20, to_show.shape[0] - 30)
-                topLeftCornerOfText = (20, 30)
-                fontScale = 0.8
-                white = (255, 255, 255)
-                red = (0, 0, 255)
-                tickness = 2
+            add_image_info(to_show, fpss, to_show_text)
 
-                # show fps
-                cv2.putText(img=to_show,
-                            text=fpss,
-                            org=topLeftCornerOfText,
-                            fontFace=font,
-                            fontScale=fontScale,
-                            color=red,
-                            thickness=tickness,
-                            lineType=cv2.LINE_AA)
-
-                # show hand info
-                cv2.putText(img=to_show,
-                            text=to_show_text,
-                            org=bottomLeftCornerOfText,
-                            fontFace=font,
-                            fontScale=fontScale,
-                            color=white,
-                            thickness=tickness)
-
-                # show dot at center of image
-                im_center = (
-                    int(to_show.shape[1] / 2), int(to_show.shape[0] / 2))
-                to_show = cv2.circle(to_show,
-                                     im_center,
-                                     radius=3,
-                                     color=(0, 0, 255),
-                                     thickness=3)
-
-                cv2.imshow(WINDOW_NAME, to_show)
-                cv2.waitKey(1)
+            cv2.imshow(WINDOW_NAME, to_show)
+            cv2.waitKey(1)
 
     except KeyboardInterrupt:
         cap.release()
         cv2.destroyAllWindows()
+        hands.close()
 
 
 if __name__ == "__main__":
