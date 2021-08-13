@@ -13,7 +13,7 @@ build_portable:
 	cp src/classes.json ${PORTABLE_DIR}/dataset/dataset.json
 
 clean_portable:
-	rm -rf ${PORTABLE_DIR}
+	- rm -rf ${PORTABLE_DIR}
 
 download_models:
 	wget ${MODELS_PATH}
@@ -21,6 +21,7 @@ download_models:
 install_models:
 	unzip models.zip -d models
 	mv models ${PORTABLE_DIR}/
+	rm models.zip
 
 clean_models:
-	rm models.zip
+	- rm models.zip
