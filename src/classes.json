@@ -1,0 +1,41 @@
+{
+    "data": [],
+    "classes": [
+        {
+            "name": "open_hand"
+        },
+        {
+            "name": "fist"
+        },
+        {
+            "name": "two"
+        },
+        {
+            "name": "three"
+        },
+        {
+            "name": "spiderman"
+        },
+        {
+            "name": "ok"
+        },
+        {
+            "name": "pinch"
+        },
+        {
+            "name": "thumb_up"
+        },
+        {
+            "name": "thumb_down"
+        },
+        {
+            "name": "index"
+        },
+        {
+            "name": "middle"
+        },
+        {
+            "name": "little"
+        }
+    ]
+}

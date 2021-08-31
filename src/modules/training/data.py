@@ -6,7 +6,7 @@ import dotenv
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-import training.user_transforms as user_T
+import modules.training.user_transforms as user_T
 
 dotenv.load_dotenv()
 

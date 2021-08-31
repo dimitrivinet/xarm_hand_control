@@ -2,11 +2,11 @@ import os
 
 import dotenv
 
-from training.acquire import acquire
-from training.export import export
-from training.split_dataset import split_dataset
-from training.train import train
-from utils import TrainingMode as Mode
+from modules.training.acquire import acquire
+from modules.training.export import export
+from modules.training.split_dataset import split_dataset
+from modules.training.train import train
+from modules.utils import TrainingMode as Mode
 
 dotenv.load_dotenv()
 
@@ -16,8 +16,8 @@ DATASET_DIR = os.getenv('DATASET_DIR')
 
 
 # uncomment desired mode
-MODE = Mode.TRAIN
-# MODE = Mode.EXPORT
+# MODE = Mode.TRAIN
+MODE = Mode.EXPORT
 # MODE = Mode.ACQUIRE
 
 SAVE_ALL = False  # True: save all checkpoints
@@ -39,15 +39,7 @@ def main():
         train(OUTPUT_DIR, NUM_EPOCHS, SAVE_ALL)
 
     elif MODE == Mode.EXPORT:
-        export_output_dir = os.path.join(OUTPUT_DIR, "export")
-        assert os.path.exists(
-            MLP_MODEL_PATH), "file not found at specified checkpoint path"
-
-        if not os.path.exists(export_output_dir):
-            print(f"crating dir {export_output_dir}")
-            os.makedirs(export_output_dir, exist_ok=True)
-
-        export(MLP_MODEL_PATH, export_output_dir)
+        export()
 
     elif MODE == Mode.ACQUIRE:
         DATASET_PATH = os.path.join(DATASET_DIR, "dataset.json")

@@ -2,7 +2,7 @@ import os
 import json
 import random
 
-from training.acquire import classes
+from modules.training.acquire import classes
 
 
 def split_dataset(dataset_path: os.PathLike, train_percentage: float):

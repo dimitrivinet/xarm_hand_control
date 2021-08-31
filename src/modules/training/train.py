@@ -5,8 +5,8 @@ import torch.nn as nn
 from torch.optim import AdamW
 from tqdm import tqdm
 
-from training.data import TrainingData
-from training.model import HandsClassifier
+from modules.training.data import TrainingData
+from modules.training.model import HandsClassifier
 
 LEARNING_RATE = 1e-3
 
