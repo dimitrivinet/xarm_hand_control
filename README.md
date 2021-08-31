@@ -4,6 +4,14 @@ Hand landmark recognition with Mediapipe and landmark classification with PyTorc
 
 ## Setup
 
-- Install requirements with `requirements.txt`
+- Install requirements with `requirements.txt`:
 
-- Copy  `src/.env.default` as `src/.env` and fill in absolute paths for all values
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+- run `make` to build protable version
+
+- run `make run` to start program
