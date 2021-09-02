@@ -14,36 +14,31 @@ import torch
 
 from modules.training.model import HandsClassifier
 from modules.utils import FPS
+from modules.utils import ClassificationMode
 from modules.utils import ClassificationMode as Mode
 from modules.utils import Command
 
 dotenv.load_dotenv()
 
-DATASET_DIR = os.getenv('DATASET_DIR')
-MLP_MODEL_PATH = os.getenv('MLP_MODEL_PATH')
-ONNX_MODEL_PATH = os.getenv('ONNX_MODEL_PATH')
-RF_MODEL_PATH = os.getenv('RF_MODEL_PATH')
-
-# choose classification mode
-# with env variable:
-MODE = os.getenv('CLASSIFICATION_MODE')
-if MODE is not None:
-    MODE = Mode.get(MODE)
-else:
-    # with hard-coded value:
-    # MODE = Mode.NO_CLASSIFICATION
-    # MODE = Mode.RANDOM_FOREST
-    # MODE = Mode.MLP
-    MODE = Mode.ONNX
-
-VIDEO_INDEX = 0
-WINDOW_NAME = "win"
-
+# * ----------------------------------------------------------------------------
+# * PROGRAM PARAMETERS
+# * ----------------------------------------------------------------------------
 ROBOT_COMMAND_SCALE = 100
 ROBOT_SPEED = 100.0
 ROBOT_MVACC = 1000.0
 
 MAX_NUM_HANDS = 1
+# * ----------------------------------------------------------------------------
+
+
+VIDEO_INDEX = os.getenv('VIDEO_INDEX')
+DATASET_DIR = os.getenv('DATASET_DIR')
+MLP_MODEL_PATH = os.getenv('MLP_MODEL_PATH')
+ONNX_MODEL_PATH = os.getenv('ONNX_MODEL_PATH')
+RF_MODEL_PATH = os.getenv('RF_MODEL_PATH')
+
+MODE = None
+WINDOW_NAME = "Hand Control"
 
 classification_buffer = deque(maxlen=5)
 
@@ -356,21 +351,39 @@ def add_image_info(image, top_left_text, bottom_left_text):
                thickness=3)
 
 
-def main():
+def process(classification_mode: ClassificationMode = ClassificationMode.NO_CLASSIFICATION):
     """Main loop. Captures video from camera, runs Mediapipe Hands and runs
     processing before showing image
 
     Raises:
         IOError: if OpenCV can't access camera
     """
+    global MODE
+    MODE = classification_mode
+
+    global VIDEO_INDEX
+    try:
+        VIDEO_INDEX = int(VIDEO_INDEX)
+    except Exception:
+        print("Video index not recognized in env variables. Defaulting to 0")
+        VIDEO_INDEX = 0
 
     inner_fps = FPS()
     outer_fps = FPS()
 
-    win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
+    try:
+        classes = get_classes()
+    except FileNotFoundError:
+        print("dataser.json not found in specified DATASET_DIR path.")
+        if MODE == ClassificationMode.NO_CLASSIFICATION:
+            classes = None
+        else:
+            print("specify correct DATASET_DIR in .env file to use a classification mode different than NO_CLASSIFICATION")
+            return
 
-    classes = get_classes()
     model = load_model(classes)
+
+    win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
 
     cap = cv2.VideoCapture(VIDEO_INDEX)
     W, H = 640, 480
@@ -424,4 +437,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    HC_CLASSIFICATION_MODE = os.getenv('HC_CLASSIFICATION_MODE')
+    process(HC_CLASSIFICATION_MODE)

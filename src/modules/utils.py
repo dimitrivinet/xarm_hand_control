@@ -32,22 +32,23 @@ class FPS:
         return mean(self.buffer)
 
 
-class TrainingMode(Enum):
+class ProgramMode(Enum):
     """main_training.py mode enum
     """
     NONE = auto()
+    PROCESS = auto()
     TRAIN = auto()
     EXPORT = auto()
     ACQUIRE = auto()
 
     @staticmethod
-    def get(label):
+    def get(label: str):
         ret = None
 
         try:
-            ret = TrainingMode[label]
+            ret = ProgramMode[label]
         except KeyError:
-            ret = TrainingMode.NONE
+            ret = ProgramMode.NONE
 
         return ret
 
@@ -61,7 +62,7 @@ class ClassificationMode(Enum):
     ONNX = auto()
 
     @staticmethod
-    def get(label):
+    def get(label: str):
         ret = None
 
         try:

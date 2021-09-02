@@ -1,16 +1,12 @@
 import json
 import os
+import sys
+import traceback
 from dataclasses import dataclass
 
-import dotenv
+import modules.training.user_transforms as user_T
 import torch
 from torch.utils.data import DataLoader, Dataset
-
-import modules.training.user_transforms as user_T
-
-dotenv.load_dotenv()
-
-DATASET_DIR = os.getenv('DATASET_DIR')
 
 TRANSFORMS = [
     user_T.flip_h,
@@ -65,8 +61,12 @@ class HandsDataset(Dataset):
         else:
             self.dataset_path = os.path.join(dataset_dir, "dataset_valid.json")
 
-        with open(self.dataset_path, "r") as f:
-            self.dataset_dict = json.load(f)
+        try:
+            with open(self.dataset_path, "r") as f:
+                self.dataset_dict = json.load(f)
+        except FileNotFoundError:
+            print(traceback.format_exc())
+            sys.exit("Enter correct DATASET_DIR in .env or env variables")
 
         self.data = self.dataset_dict['data']
 
@@ -92,25 +92,31 @@ class TrainingData():
     """Class for Training Data. Contains training and validation datasets as
         well as training and validation dataloaders
     """
-    trainset: HandsDataset = HandsDataset(
-        DATASET_DIR,
-        train=True
-    )
-    validset: HandsDataset = HandsDataset(
-        DATASET_DIR,
-        train=False
-    )
-    trainloader: DataLoader = DataLoader(
-        trainset,
-        batch_size=32,
-        shuffle=True,
-        num_workers=6,
-        pin_memory=True,
-    )
-    validloader: DataLoader = DataLoader(
-        validset,
-        batch_size=32,
-        shuffle=True,
-        num_workers=6,
-        pin_memory=True,
-    )
+    trainset: HandsDataset
+    validset: HandsDataset
+    trainloader: DataLoader
+    validloader: DataLoader
+
+    def __init__(self, dataset_dir):
+        self.trainset = HandsDataset(
+            dataset_dir,
+            train=True
+        )
+        self.validset = HandsDataset(
+            dataset_dir,
+            train=False
+        )
+        self.trainloader = DataLoader(
+            self.trainset,
+            batch_size=32,
+            shuffle=True,
+            num_workers=6,
+            pin_memory=True,
+        )
+        self.validloader = DataLoader(
+            self.validset,
+            batch_size=32,
+            shuffle=True,
+            num_workers=6,
+            pin_memory=True,
+        )

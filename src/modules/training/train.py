@@ -11,8 +11,8 @@ from modules.training.model import HandsClassifier
 LEARNING_RATE = 1e-3
 
 
-def train(save_path: os.PathLike, epochs: int, save_all: bool):
-    training_data = TrainingData()
+def train(dataset_dir: os.PathLike, save_path: os.PathLike, epochs: int, save_all: bool):
+    training_data = TrainingData(dataset_dir)
 
     n_classes = training_data.trainset.n_classes
     model = HandsClassifier(n_classes)
