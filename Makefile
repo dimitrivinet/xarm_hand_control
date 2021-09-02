@@ -1,11 +1,14 @@
 PORTABLE_DIR=portable
 MODELS_PATH=https://github.com/dimitrivinet/xarm_hand_control/releases/download/v1.0/models.zip
 
-all: download_models build_portable install_models
+portable: download_models build_portable install_models
+
+all: portable run
+
 clean: clean_portable clean_models
 
 run:
-	python3 portable/main.py
+	python3 ${PORTABLE_DIR}/main.py
 
 build_portable:
 	mkdir -p ${PORTABLE_DIR}/modules/training ${PORTABLE_DIR}/dataset ${PORTABLE_DIR}/models
