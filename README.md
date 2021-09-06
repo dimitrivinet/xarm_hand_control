@@ -29,6 +29,8 @@ If you used the optional step above, you can quit out of the virtual environment
 
 - [PyTorch](https://pytorch.org/get-started/locally/)
 
+- tqdm (`pip3 install tqdm`)
+
 - onnxruntime (`pip3 install onnxruntime`)
 
 ## Usage
