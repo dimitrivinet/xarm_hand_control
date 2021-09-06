@@ -4,7 +4,7 @@ import sys
 import traceback
 from dataclasses import dataclass
 
-import modules.training.user_transforms as user_T
+import xarm_hand_control.modules.training.user_transforms as user_T
 import torch
 from torch.utils.data import DataLoader, Dataset
 

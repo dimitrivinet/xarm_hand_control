@@ -5,20 +5,17 @@ from statistics import mode
 from typing import Any, Callable, Tuple, Union
 
 import cv2
-import dotenv
 import joblib
 import mediapipe as mp
 import numpy as np
 import onnxruntime
 import torch
 
-from modules.training.model import HandsClassifier
-from modules.utils import FPS
-from modules.utils import ClassificationMode
-from modules.utils import ClassificationMode as Mode
-from modules.utils import Command
-
-dotenv.load_dotenv()
+from xarm_hand_control.modules.training.model import HandsClassifier
+from xarm_hand_control.modules.utils import FPS
+from xarm_hand_control.modules.utils import ClassificationMode
+from xarm_hand_control.modules.utils import ClassificationMode as Mode
+from xarm_hand_control.modules.utils import Command
 
 # * ----------------------------------------------------------------------------
 # * PROGRAM PARAMETERS
@@ -30,14 +27,6 @@ ROBOT_MVACC = 1000.0
 MAX_NUM_HANDS = 1
 # * ----------------------------------------------------------------------------
 
-
-VIDEO_INDEX = os.getenv('VIDEO_INDEX')
-DATASET_DIR = os.getenv('DATASET_DIR')
-MLP_MODEL_PATH = os.getenv('MLP_MODEL_PATH')
-ONNX_MODEL_PATH = os.getenv('ONNX_MODEL_PATH')
-RF_MODEL_PATH = os.getenv('RF_MODEL_PATH')
-
-MODE = None
 WINDOW_NAME = "Hand Control"
 
 classification_buffer = deque(maxlen=5)
@@ -54,7 +43,7 @@ def class_as_str(classes: dict, class_index: int) -> str:
     return classes[class_index]['name']
 
 
-def format_landmarks(landmarks):
+def format_landmarks(classification_mode: ClassificationMode, landmarks: Any):
     """Format landmarks to the format used by selected model
     """
 
@@ -63,19 +52,19 @@ def format_landmarks(landmarks):
     for landmark in landmarks:
         f_landmarks = [[point.x, point.y] for point in landmark.landmark]
 
-        if MODE == Mode.RANDOM_FOREST:
+        if classification_mode == Mode.RANDOM_FOREST:
             ret.append(np.array([f_landmarks, ]))
 
-        elif MODE == Mode.MLP:
+        elif classification_mode == Mode.MLP:
             ret.append(torch.tensor([f_landmarks, ]))
 
-        elif MODE == Mode.ONNX:
+        elif classification_mode == Mode.ONNX:
             ret.append(np.array([f_landmarks, ], dtype=np.float32))
 
     return ret
 
 
-def get_onnx_model() -> Callable[[np.ndarray], list]:
+def get_onnx_model(onnx_model_path: os.PathLike) -> Callable[[np.ndarray], list]:
     """Create the onnx session and return callable used to run inference
 
     Returns:
@@ -83,7 +72,7 @@ def get_onnx_model() -> Callable[[np.ndarray], list]:
         Parameter is np.ndarray with shape (1, x, y) and dtype np.float32.
     """
 
-    session = onnxruntime.InferenceSession(ONNX_MODEL_PATH)
+    session = onnxruntime.InferenceSession(onnx_model_path)
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
 
@@ -95,7 +84,7 @@ def get_onnx_model() -> Callable[[np.ndarray], list]:
     return run
 
 
-def load_model(classes: dict = None) -> Any:
+def load_model(classification_mode: ClassificationMode, model_path: os.PathLike, classes: dict = None) -> Any:
     """Load model according to selected inference mode.
 
     Args:
@@ -107,22 +96,22 @@ def load_model(classes: dict = None) -> Any:
 
     model = None
 
-    if MODE == Mode.RANDOM_FOREST:
-        model = joblib.load(RF_MODEL_PATH)
+    if classification_mode == Mode.RANDOM_FOREST:
+        model = joblib.load(model_path)
 
-    elif MODE == Mode.MLP:
+    elif classification_mode == Mode.MLP:
         n_classes = len(classes)
         model = HandsClassifier(n_classes)
-        model.load_state_dict(torch.load(MLP_MODEL_PATH))
+        model.load_state_dict(torch.load(model_path))
         model.eval()
 
-    elif MODE == Mode.ONNX:
-        model = get_onnx_model()
+    elif classification_mode == Mode.ONNX:
+        model = get_onnx_model(model_path)
 
     return model
 
 
-def run_inference(classes: dict, landmarks: Any, model: Any) -> Union[None, list]:
+def run_inference(classification_mode: ClassificationMode, classes: dict, landmarks: Any, model: Any) -> Union[None, list]:
     """Run inference on array of landmarks with selected model
 
     Args:
@@ -135,21 +124,21 @@ def run_inference(classes: dict, landmarks: Any, model: Any) -> Union[None, list
         avoid artefacts, None if MODE = Mode.NO_CLASSIFICATION
     """
 
-    if MODE == Mode.NO_CLASSIFICATION:
+    if classification_mode == Mode.NO_CLASSIFICATION:
         return None
 
     classified_hands = []
-    f_landmarks = format_landmarks(landmarks)
+    f_landmarks = format_landmarks(classification_mode, landmarks)
 
     for landmark in f_landmarks:
 
-        if MODE == Mode.RANDOM_FOREST:
+        if classification_mode == Mode.RANDOM_FOREST:
             class_index = model.predict(landmark.reshape(1, -1))[0]
 
-        elif MODE == Mode.MLP:
+        elif classification_mode == Mode.MLP:
             class_index = torch.argmax(model(landmark)).item()
 
-        elif MODE == Mode.ONNX:
+        elif classification_mode == Mode.ONNX:
             result = model(landmark)
             class_index = np.argmax(result[0].squeeze(axis=0))
 
@@ -257,7 +246,7 @@ def get_robot_command(x: float, y: float) -> Command:
     return command
 
 
-def run_processing(classes: dict, model: Any, image: Any, landmarks: list
+def run_processing(classification_mode: ClassificationMode, classes: dict, model: Any, image: Any, landmarks: list
                    ) -> Tuple[str, Command]:
     """Processing loop after Mediapipe Hands ran
 
@@ -275,7 +264,7 @@ def run_processing(classes: dict, model: Any, image: Any, landmarks: list
     if landmarks is None:
         return "", None
 
-    classified_hands = run_inference(classes, landmarks, model)
+    classified_hands = run_inference(classification_mode, classes, landmarks, model)
 
     x, y = get_center_coords(landmarks)
 
@@ -291,18 +280,14 @@ def run_processing(classes: dict, model: Any, image: Any, landmarks: list
     return to_show_text, robot_command
 
 
-def get_classes(dataset_path: os.PathLike = None) -> dict:
+def get_classes(dataset_path: os.PathLike) -> dict:
     """Get classes from dataset JSON
 
     Args:
-        dataset_path (os.PathLike, optional): Path to dataset JSON. Defaults to None.
-
+        dataset_path (os.PathLike, optional): Path to dataset JSON.
     Returns:
         dict: Classes dict
     """
-
-    if dataset_path is None:
-        dataset_path = os.path.join(DATASET_DIR, "dataset.json")
     with open(dataset_path, 'r') as f:
         dataset = json.load(f)
 
@@ -351,41 +336,36 @@ def add_image_info(image, top_left_text, bottom_left_text):
                thickness=3)
 
 
-def process(classification_mode: ClassificationMode = ClassificationMode.NO_CLASSIFICATION):
+def process(classification_mode: ClassificationMode = ClassificationMode.NO_CLASSIFICATION,
+            video_index: int = 0,
+            dataset_path: os.PathLike = None,
+            model_path: os.PathLike = None
+            ):
     """Main loop. Captures video from camera, runs Mediapipe Hands and runs
     processing before showing image
 
     Raises:
         IOError: if OpenCV can't access camera
     """
-    global MODE
-    MODE = classification_mode
+    # global MODE
+    # MODE = classification_mode
 
-    global VIDEO_INDEX
-    try:
-        VIDEO_INDEX = int(VIDEO_INDEX)
-    except Exception:
-        print("Video index not recognized in env variables. Defaulting to 0")
-        VIDEO_INDEX = 0
+    # global VIDEO_INDEX
+    # VIDEO_INDEX = video_index
 
     inner_fps = FPS()
     outer_fps = FPS()
 
-    try:
-        classes = get_classes()
-    except FileNotFoundError:
-        print("dataser.json not found in specified DATASET_DIR path.")
-        if MODE == ClassificationMode.NO_CLASSIFICATION:
-            classes = None
-        else:
-            print("specify correct DATASET_DIR in .env file to use a classification mode different than NO_CLASSIFICATION")
-            return
+    if dataset_path is not None:
+        classes = get_classes(dataset_path)
+    else:
+        classes = None
 
-    model = load_model(classes)
+    model = load_model(classification_mode, model_path, classes)
 
     win = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
 
-    cap = cv2.VideoCapture(VIDEO_INDEX)
+    cap = cv2.VideoCapture(video_index)
     W, H = 640, 480
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, H)
@@ -416,7 +396,7 @@ def process(classification_mode: ClassificationMode = ClassificationMode.NO_CLAS
                 frame, 1) if ret_frame is None else ret_frame
 
             to_show_text, robot_command = run_processing(
-                classes, model, to_show, landmarks)
+                classification_mode, classes, model, to_show, landmarks)
 
             inner_fps.update()
             outer_fps.update()
@@ -434,8 +414,3 @@ def process(classification_mode: ClassificationMode = ClassificationMode.NO_CLAS
         cap.release()
         cv2.destroyAllWindows()
         hands.close()
-
-
-if __name__ == "__main__":
-    HC_CLASSIFICATION_MODE = os.getenv('HC_CLASSIFICATION_MODE')
-    process(HC_CLASSIFICATION_MODE)
