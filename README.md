@@ -14,7 +14,8 @@ source .venv/bin/activate
 Then:
 
 ```bash
-pip3 install git+https://github.com/dimitrivinet/xarm_hand_control
+pip3 install git+https://github.com/dimitrivinet/xarm_hand_control \
+    --extra-index-url https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ## Download trained models
