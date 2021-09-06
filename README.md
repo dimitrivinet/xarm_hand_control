@@ -15,7 +15,7 @@ Then:
 
 ```bash
 pip3 install git+https://github.com/dimitrivinet/xarm_hand_control \
-    --extra-index-url https://download.pytorch.org/whl/torch_stable.html
+    -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 And test with:
