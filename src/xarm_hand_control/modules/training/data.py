@@ -23,6 +23,7 @@ def transform(landmarks: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.tensor: transformed landmarks
     """
+
     transformed = torch.clone(landmarks)
 
     transformed = user_T.normalize_center(transformed)

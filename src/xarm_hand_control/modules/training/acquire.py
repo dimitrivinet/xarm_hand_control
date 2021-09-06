@@ -80,7 +80,7 @@ def save_landmarks(data: list, curr_class_index: int, landmarks: Iterable):
     data.append([f_landmarks, curr_class_index])
 
 
-def acquire(output_path: os.PathLike, video_index: int):
+def acquire(output_dir: os.PathLike, video_index: int):
     """Loop for creating dataset
 
     Args:
@@ -139,6 +139,8 @@ def acquire(output_path: os.PathLike, video_index: int):
         "classes": classes
     }
 
+    output_path = os.path.join(output_dir, "dataset.json")
+
     with open(output_path, 'w') as f:
         json.dump(data_dict, f)
 
@@ -146,8 +148,8 @@ def acquire(output_path: os.PathLike, video_index: int):
     cv2.destroyAllWindows()
 
 
-def split_dataset(dataset_path: os.PathLike, train_percentage: float):
-    with open(dataset_path, 'r') as f:
+def split_dataset(input_dataset_path: os.Pathlike, output_dir: os.PathLike, train_percentage: float):
+    with open(input_dataset_path, 'r') as f:
         dataset = json.load(f)
 
     data = dataset['data']
@@ -157,12 +159,10 @@ def split_dataset(dataset_path: os.PathLike, train_percentage: float):
     trainset = {'data': data[:n_training_data], 'classes': classes}
     validset = {'data': data[n_training_data:], 'classes': classes}
 
-    dataset_dir = os.path.dirname(dataset_path)
-
-    with open(os.path.join(dataset_dir, 'dataset_train.json'), 'w') as f:
+    with open(os.path.join(output_dir, 'dataset_train.json'), 'w') as f:
         json.dump(trainset, f)
 
-    with open(os.path.join(dataset_dir, 'dataset_valid.json'), 'w') as f:
+    with open(os.path.join(output_dir, 'dataset_valid.json'), 'w') as f:
         json.dump(validset, f)
 
     print("done.")
