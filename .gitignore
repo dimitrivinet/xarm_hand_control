@@ -1,5 +1,5 @@
-src/dataset
-models
+dataset
+models*
 output
 tests
 portable

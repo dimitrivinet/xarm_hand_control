@@ -6,6 +6,8 @@ import dotenv
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
+#TODO: implement
+
 dotenv.load_dotenv()
 
 DATASET_DIR = os.getenv('DATASET_DIR')
