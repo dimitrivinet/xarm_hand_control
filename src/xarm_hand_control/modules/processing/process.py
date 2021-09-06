@@ -8,10 +8,7 @@ import cv2
 import joblib
 import mediapipe as mp
 import numpy as np
-import onnxruntime
-import torch
 
-from xarm_hand_control.modules.training.model import HandsClassifier
 from xarm_hand_control.modules.utils import FPS
 from xarm_hand_control.modules.utils import ClassificationMode
 from xarm_hand_control.modules.utils import ClassificationMode as Mode
@@ -56,6 +53,8 @@ def format_landmarks(classification_mode: ClassificationMode, landmarks: Any):
             ret.append(np.array([f_landmarks, ]))
 
         elif classification_mode == Mode.MLP:
+            import torch
+
             ret.append(torch.tensor([f_landmarks, ]))
 
         elif classification_mode == Mode.ONNX:
@@ -71,6 +70,8 @@ def get_onnx_model(onnx_model_path: os.PathLike) -> Callable[[np.ndarray], list]
         Callable[[np.ndarray], list]: function to run inference with.
         Parameter is np.ndarray with shape (1, x, y) and dtype np.float32.
     """
+
+    import onnxruntime
 
     session = onnxruntime.InferenceSession(onnx_model_path)
     input_name = session.get_inputs()[0].name
@@ -100,6 +101,9 @@ def load_model(classification_mode: ClassificationMode, model_path: os.PathLike,
         model = joblib.load(model_path)
 
     elif classification_mode == Mode.MLP:
+        import torch
+        from xarm_hand_control.modules.training.model import HandsClassifier
+
         n_classes = len(classes)
         model = HandsClassifier(n_classes)
         model.load_state_dict(torch.load(model_path))
@@ -136,6 +140,8 @@ def run_inference(classification_mode: ClassificationMode, classes: dict, landma
             class_index = model.predict(landmark.reshape(1, -1))[0]
 
         elif classification_mode == Mode.MLP:
+            import torch
+
             class_index = torch.argmax(model(landmark)).item()
 
         elif classification_mode == Mode.ONNX:
@@ -264,7 +270,8 @@ def run_processing(classification_mode: ClassificationMode, classes: dict, model
     if landmarks is None:
         return "", None
 
-    classified_hands = run_inference(classification_mode, classes, landmarks, model)
+    classified_hands = run_inference(
+        classification_mode, classes, landmarks, model)
 
     x, y = get_center_coords(landmarks)
 

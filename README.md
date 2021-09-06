@@ -4,7 +4,7 @@ Hand landmark recognition with Mediapipe and landmark classification with PyTorc
 
 ## Setup
 
-- Optional:
+Optional (requires python3-venv):
 
 ```bash
 python3 -m venv .venv
@@ -14,8 +14,7 @@ source .venv/bin/activate
 Then:
 
 ```bash
-pip3 install git+https://github.com/dimitrivinet/xarm_hand_control \
-    -f https://download.pytorch.org/whl/torch_stable.html
+pip3 install git+https://github.com/dimitrivinet/xarm_hand_control
 ```
 
 And test with:
@@ -23,6 +22,12 @@ And test with:
 ```bash
 python3 -m xarm_hand_control
 ```
+
+## Dependencies (optional)
+
+- [PyTorch](https://pytorch.org/get-started/locally/)
+
+- onnxruntime (`pip3 install onnxruntime`)
 
 ## Download trained models
 
