@@ -23,24 +23,14 @@ And test with:
 python3 -m xarm_hand_control
 ```
 
+If you used the optional step above, you can quit out of the virtual environment with `deactivate` and remove it from your machine with `rm -rf .venv`.
+
 ## Dependencies (optional)
 
 - [PyTorch](https://pytorch.org/get-started/locally/)
 
 - onnxruntime (`pip3 install onnxruntime`)
 
-## Download trained models
+## Usage
 
-Either clone the repository and run `make get_models` or:
-
-```bash
-wget https://github.com/dimitrivinet/xarm_hand_control/releases/download/v1.0/models.zip
-unzip models.zip -d models
-```
-
-And cleanup:
-
-```bash
-rm models.zip
-rm models.zip
-```
+See [USAGE.md](./USAGE.md)
