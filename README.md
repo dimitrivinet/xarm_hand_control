@@ -18,6 +18,12 @@ pip3 install git+https://github.com/dimitrivinet/xarm_hand_control \
     --extra-index-url https://download.pytorch.org/whl/torch_stable.html
 ```
 
+And test with:
+
+```bash
+python3 -m xarm_hand_control
+```
+
 ## Download trained models
 
 Either clone the repository and run `make get_models` or:
