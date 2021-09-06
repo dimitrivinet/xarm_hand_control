@@ -9,7 +9,6 @@ import joblib
 import mediapipe as mp
 import numpy as np
 
-from xarm_hand_control.modules.training.model import HandsClassifier
 from xarm_hand_control.modules.utils import FPS
 from xarm_hand_control.modules.utils import ClassificationMode
 from xarm_hand_control.modules.utils import ClassificationMode as Mode
@@ -103,6 +102,7 @@ def load_model(classification_mode: ClassificationMode, model_path: os.PathLike,
 
     elif classification_mode == Mode.MLP:
         import torch
+        from xarm_hand_control.modules.training.model import HandsClassifier
 
         n_classes = len(classes)
         model = HandsClassifier(n_classes)
