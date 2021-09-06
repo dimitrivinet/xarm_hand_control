@@ -264,7 +264,8 @@ def run_processing(classification_mode: ClassificationMode, classes: dict, model
     if landmarks is None:
         return "", None
 
-    classified_hands = run_inference(classification_mode, classes, landmarks, model)
+    classified_hands = run_inference(
+        classification_mode, classes, landmarks, model)
 
     x, y = get_center_coords(landmarks)
 

@@ -1,9 +1,9 @@
 import os
 
-import xarm_hand_control.modules.training.train as mtt
-import xarm_hand_control.modules.training.export as mte
-import xarm_hand_control.modules.training.acquire as mta
 import xarm_hand_control.modules.processing.process as mpp
+import xarm_hand_control.modules.training.acquire as mta
+import xarm_hand_control.modules.training.export as mte
+import xarm_hand_control.modules.training.train as mtt
 from xarm_hand_control.modules.utils import ClassificationMode
 
 
@@ -38,13 +38,6 @@ def export(dataset_path: os.PathLike,
 
 
 def acquire(output_path: os.PathLike, video_index: int):
+
     mta.acquire(output_path, video_index)
     mta.split_dataset(output_path, train_percentage=0.7)
-
-
-# if __name__ == "__main__":
-#     # main()
-#     classification_mode = ClassificationMode.MLP
-#     dataset_path = "/home/dimitri/Documents/Projects/xarm_hand_control/classes.json"
-#     model_path = "/home/dimitri/Documents/Projects/xarm_hand_control/models/best.pt"
-#     process(classification_mode, video_index=6, dataset_path=dataset_path, model_path=model_path)
